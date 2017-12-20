@@ -91,6 +91,11 @@ return [
             'url_type'  => 'publicURL',
         ],
 
+	'snapshots' => [
+		'driver'=> 'local',
+		'root' => database_path('snapshots'),
+		],
+
     ],
 
 ];

@@ -150,6 +150,7 @@ return [
         Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider::class,
         Barryvdh\Debugbar\ServiceProvider::class,
         Barryvdh\Snappy\ServiceProvider::class,
+	Spatie\DbSnapshots\DbSnapshotsServiceProvider::class,
 
 
         /*
