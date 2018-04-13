@@ -64,7 +64,7 @@ class SearchService
      * @param string $searchString
      * @param string $entityType
      * @param int $page
-     * @param int $count
+     * @param int $count - Count of each entity to search, Total returned could can be larger and not guaranteed.
      * @return array[int, Collection];
      */
     public function searchEntities($searchString, $entityType = 'all', $page = 1, $count = 20)
@@ -72,7 +72,6 @@ class SearchService
         $terms = $this->parseSearchString($searchString);
         $entityTypes = array_keys($this->entities);
         $entityTypesToSearch = $entityTypes;
-        $results = collect();
 
         if ($entityType !== 'all') {
             $entityTypesToSearch = $entityType;
@@ -80,18 +79,27 @@ class SearchService
             $entityTypesToSearch = explode('|', $terms['filters']['type']);
         }
 
+        $results = collect();
         $total = 0;
+        $hasMore = false;
 
         foreach ($entityTypesToSearch as $entityType) {
-            if (!in_array($entityType, $entityTypes)) continue;
+            if (!in_array($entityType, $entityTypes)) {
+                continue;
+            }
             $search = $this->searchEntityTable($terms, $entityType, $page, $count);
-            $total += $this->searchEntityTable($terms, $entityType, $page, $count, true);
+            $entityTotal = $this->searchEntityTable($terms, $entityType, $page, $count, true);
+            if ($entityTotal > $page * $count) {
+                $hasMore = true;
+            }
+            $total += $entityTotal;
             $results = $results->merge($search);
         }
 
         return [
             'total' => $total,
             'count' => count($results),
+            'has_more' => $hasMore,
             'results' => $results->sortByDesc('score')->values()
         ];
     }
@@ -111,7 +119,9 @@ class SearchService
 
         $results = collect();
         foreach ($entityTypesToSearch as $entityType) {
-            if (!in_array($entityType, $entityTypes)) continue;
+            if (!in_array($entityType, $entityTypes)) {
+                continue;
+            }
             $search = $this->buildEntitySearchQuery($terms, $entityType)->where('book_id', '=', $bookId)->take(20)->get();
             $results = $results->merge($search);
         }
@@ -143,7 +153,9 @@ class SearchService
     public function searchEntityTable($terms, $entityType = 'page', $page = 1, $count = 20, $getCount = false)
     {
         $query = $this->buildEntitySearchQuery($terms, $entityType);
-        if ($getCount) return $query->count();
+        if ($getCount) {
+            return $query->count();
+        }
 
         $query = $query->skip(($page-1) * $count)->take($count);
         return $query->get();
@@ -164,12 +176,12 @@ class SearchService
         if (count($terms['search']) > 0) {
             $subQuery = $this->db->table('search_terms')->select('entity_id', 'entity_type', \DB::raw('SUM(score) as score'));
             $subQuery->where('entity_type', '=', 'BookStack\\' . ucfirst($entityType));
-            $subQuery->where(function(Builder $query) use ($terms) {
+            $subQuery->where(function (Builder $query) use ($terms) {
                 foreach ($terms['search'] as $inputTerm) {
                     $query->orWhere('term', 'like', $inputTerm .'%');
                 }
             })->groupBy('entity_type', 'entity_id');
-            $entitySelect->join(\DB::raw('(' . $subQuery->toSql() . ') as s'), function(JoinClause $join) {
+            $entitySelect->join(\DB::raw('(' . $subQuery->toSql() . ') as s'), function (JoinClause $join) {
                 $join->on('id', '=', 'entity_id');
             })->selectRaw($entity->getTable().'.*, s.score')->orderBy('score', 'desc');
             $entitySelect->mergeBindings($subQuery);
@@ -177,7 +189,7 @@ class SearchService
 
         // Handle exact term matching
         if (count($terms['exact']) > 0) {
-            $entitySelect->where(function(\Illuminate\Database\Eloquent\Builder $query) use ($terms, $entity) {
+            $entitySelect->where(function (\Illuminate\Database\Eloquent\Builder $query) use ($terms, $entity) {
                 foreach ($terms['exact'] as $inputTerm) {
                     $query->where(function (\Illuminate\Database\Eloquent\Builder $query) use ($inputTerm, $entity) {
                         $query->where('name', 'like', '%'.$inputTerm .'%')
@@ -195,7 +207,9 @@ class SearchService
         // Handle filters
         foreach ($terms['filters'] as $filterTerm => $filterValue) {
             $functionName = camel_case('filter_' . $filterTerm);
-            if (method_exists($this, $functionName)) $this->$functionName($entitySelect, $entity, $filterValue);
+            if (method_exists($this, $functionName)) {
+                $this->$functionName($entitySelect, $entity, $filterValue);
+            }
         }
 
         return $this->permissionService->enforceEntityRestrictions($entityType, $entitySelect, 'view');
@@ -234,7 +248,9 @@ class SearchService
 
         // Parse standard terms
         foreach (explode(' ', trim($searchString)) as $searchTerm) {
-            if ($searchTerm !== '') $terms['search'][] = $searchTerm;
+            if ($searchTerm !== '') {
+                $terms['search'][] = $searchTerm;
+            }
         }
 
         // Split filter values out
@@ -267,15 +283,18 @@ class SearchService
      * @param string $tagTerm
      * @return mixed
      */
-    protected function applyTagSearch(\Illuminate\Database\Eloquent\Builder $query, $tagTerm) {
+    protected function applyTagSearch(\Illuminate\Database\Eloquent\Builder $query, $tagTerm)
+    {
         preg_match("/^(.*?)((".$this->getRegexEscapedOperators().")(.*?))?$/", $tagTerm, $tagSplit);
-        $query->whereHas('tags', function(\Illuminate\Database\Eloquent\Builder $query) use ($tagSplit) {
+        $query->whereHas('tags', function (\Illuminate\Database\Eloquent\Builder $query) use ($tagSplit) {
             $tagName = $tagSplit[1];
             $tagOperator = count($tagSplit) > 2 ? $tagSplit[3] : '';
             $tagValue = count($tagSplit) > 3 ? $tagSplit[4] : '';
             $validOperator = in_array($tagOperator, $this->queryOperators);
             if (!empty($tagOperator) && !empty($tagValue) && $validOperator) {
-                if (!empty($tagName)) $query->where('name', '=', $tagName);
+                if (!empty($tagName)) {
+                    $query->where('name', '=', $tagName);
+                }
                 if (is_numeric($tagValue) && $tagOperator !== 'like') {
                     // We have to do a raw sql query for this since otherwise PDO will quote the value and MySQL will
                     // search the value as a string which prevents being able to do number-based operations
@@ -309,8 +328,8 @@ class SearchService
     public function indexEntity(Entity $entity)
     {
         $this->deleteEntityTerms($entity);
-        $nameTerms = $this->generateTermArrayFromText($entity->name, 5);
-        $bodyTerms = $this->generateTermArrayFromText($entity->getText(), 1);
+        $nameTerms = $this->generateTermArrayFromText($entity->name, 5 * $entity->searchFactor);
+        $bodyTerms = $this->generateTermArrayFromText($entity->getText(), 1 * $entity->searchFactor);
         $terms = array_merge($nameTerms, $bodyTerms);
         foreach ($terms as $index => $term) {
             $terms[$index]['entity_type'] = $entity->getMorphClass();
@@ -323,11 +342,12 @@ class SearchService
      * Index multiple Entities at once
      * @param Entity[] $entities
      */
-    protected function indexEntities($entities) {
+    protected function indexEntities($entities)
+    {
         $terms = [];
         foreach ($entities as $entity) {
-            $nameTerms = $this->generateTermArrayFromText($entity->name, 5);
-            $bodyTerms = $this->generateTermArrayFromText($entity->getText(), 1);
+            $nameTerms = $this->generateTermArrayFromText($entity->name, 5 * $entity->searchFactor);
+            $bodyTerms = $this->generateTermArrayFromText($entity->getText(), 1 * $entity->searchFactor);
             foreach (array_merge($nameTerms, $bodyTerms) as $term) {
                 $term['entity_id'] = $entity->id;
                 $term['entity_type'] = $entity->getMorphClass();
@@ -386,7 +406,9 @@ class SearchService
         $token = strtok($text, $splitChars);
 
         while ($token !== false) {
-            if (!isset($tokenMap[$token])) $tokenMap[$token] = 0;
+            if (!isset($tokenMap[$token])) {
+                $tokenMap[$token] = 0;
+            }
             $tokenMap[$token]++;
             $token = strtok($splitChars);
         }
@@ -410,43 +432,63 @@ class SearchService
 
     protected function filterUpdatedAfter(\Illuminate\Database\Eloquent\Builder $query, Entity $model, $input)
     {
-        try { $date = date_create($input);
-        } catch (\Exception $e) {return;}
+        try {
+            $date = date_create($input);
+        } catch (\Exception $e) {
+            return;
+        }
         $query->where('updated_at', '>=', $date);
     }
 
     protected function filterUpdatedBefore(\Illuminate\Database\Eloquent\Builder $query, Entity $model, $input)
     {
-        try { $date = date_create($input);
-        } catch (\Exception $e) {return;}
+        try {
+            $date = date_create($input);
+        } catch (\Exception $e) {
+            return;
+        }
         $query->where('updated_at', '<', $date);
     }
 
     protected function filterCreatedAfter(\Illuminate\Database\Eloquent\Builder $query, Entity $model, $input)
     {
-        try { $date = date_create($input);
-        } catch (\Exception $e) {return;}
+        try {
+            $date = date_create($input);
+        } catch (\Exception $e) {
+            return;
+        }
         $query->where('created_at', '>=', $date);
     }
 
     protected function filterCreatedBefore(\Illuminate\Database\Eloquent\Builder $query, Entity $model, $input)
     {
-        try { $date = date_create($input);
-        } catch (\Exception $e) {return;}
+        try {
+            $date = date_create($input);
+        } catch (\Exception $e) {
+            return;
+        }
         $query->where('created_at', '<', $date);
     }
 
     protected function filterCreatedBy(\Illuminate\Database\Eloquent\Builder $query, Entity $model, $input)
     {
-        if (!is_numeric($input) && $input !== 'me') return;
-        if ($input === 'me') $input = user()->id;
+        if (!is_numeric($input) && $input !== 'me') {
+            return;
+        }
+        if ($input === 'me') {
+            $input = user()->id;
+        }
         $query->where('created_by', '=', $input);
     }
 
     protected function filterUpdatedBy(\Illuminate\Database\Eloquent\Builder $query, Entity $model, $input)
     {
-        if (!is_numeric($input) && $input !== 'me') return;
-        if ($input === 'me') $input = user()->id;
+        if (!is_numeric($input) && $input !== 'me') {
+            return;
+        }
+        if ($input === 'me') {
+            $input = user()->id;
+        }
         $query->where('updated_by', '=', $input);
     }
 
@@ -455,7 +497,10 @@ class SearchService
         $query->where('name', 'like', '%' .$input. '%');
     }
 
-    protected function filterInTitle(\Illuminate\Database\Eloquent\Builder $query, Entity $model, $input) {$this->filterInName($query, $model, $input);}
+    protected function filterInTitle(\Illuminate\Database\Eloquent\Builder $query, Entity $model, $input)
+    {
+        $this->filterInName($query, $model, $input);
+    }
 
     protected function filterInBody(\Illuminate\Database\Eloquent\Builder $query, Entity $model, $input)
     {
@@ -469,14 +514,14 @@ class SearchService
 
     protected function filterViewedByMe(\Illuminate\Database\Eloquent\Builder $query, Entity $model, $input)
     {
-        $query->whereHas('views', function($query) {
+        $query->whereHas('views', function ($query) {
             $query->where('user_id', '=', user()->id);
         });
     }
 
     protected function filterNotViewedByMe(\Illuminate\Database\Eloquent\Builder $query, Entity $model, $input)
     {
-        $query->whereDoesntHave('views', function($query) {
+        $query->whereDoesntHave('views', function ($query) {
             $query->where('user_id', '=', user()->id);
         });
     }
@@ -484,7 +529,9 @@ class SearchService
     protected function filterSortBy(\Illuminate\Database\Eloquent\Builder $query, Entity $model, $input)
     {
         $functionName = camel_case('sort_by_' . $input);
-        if (method_exists($this, $functionName)) $this->$functionName($query, $model);
+        if (method_exists($this, $functionName)) {
+            $this->$functionName($query, $model);
+        }
     }
 
 

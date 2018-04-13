@@ -1,6 +1,24 @@
 <?php
 
+$viewPaths = [realpath(base_path('resources/views'))];
+if ($theme = env('APP_THEME', false)) {
+    array_unshift($viewPaths, base_path('themes/' . $theme));
+}
+
 return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | App theme
+    |--------------------------------------------------------------------------
+    |
+    | This option defines the theme to use for the application. When a theme
+    | is set there mush be a `themes/<theme_name>` folder to hold the
+    | custom theme overrides.
+    |
+    */
+
+    'theme' => env('APP_THEME', false),
 
     /*
     |--------------------------------------------------------------------------
@@ -13,9 +31,7 @@ return [
     |
     */
 
-    'paths' => [
-        realpath(base_path('resources/views')),
-    ],
+    'paths' => $viewPaths,
 
     /*
     |--------------------------------------------------------------------------

@@ -162,6 +162,7 @@ return [
     'pages_md_preview' => 'Preview',
     'pages_md_insert_image' => 'Insert Image',
     'pages_md_insert_link' => 'Insert Entity Link',
+    'pages_md_insert_drawing' => 'Insert Drawing',
     'pages_not_in_chapter' => 'Page is not in a chapter',
     'pages_move' => 'Move Page',
     'pages_move_success' => 'Page moved to ":parentName"',
@@ -244,6 +245,7 @@ return [
      */
     'comment' => 'Comment',
     'comments' => 'Comments',
+    'comment_add' => 'Add Comment',
     'comment_placeholder' => 'Leave a comment here',
     'comment_count' => '{0} No Comments|{1} 1 Comment|[2,*] :count Comments',
     'comment_save' => 'Save Comment',

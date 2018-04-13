@@ -35,10 +35,13 @@ return [
     'cannot_get_image_from_url' => 'Cannot get image from :url',
     'cannot_create_thumbs' => 'The server cannot create thumbnails. Please check you have the GD PHP extension installed.',
     'server_upload_limit' => 'The server does not allow uploads of this size. Please try a smaller file size.',
+    'uploaded'  => 'The server does not allow uploads of this size. Please try a smaller file size.',
     'image_upload_error' => 'An error occurred uploading the image',
+    'image_upload_type_error' => 'The image type being uploaded is invalid',
 
     // Attachments
     'attachment_page_mismatch' => 'Page mismatch during attachment update',
+    'attachment_not_found' => 'Attachment not found',
 
     // Pages
     'page_draft_autosave_fail' => 'Failed to save draft. Ensure you have internet connection before saving this page',

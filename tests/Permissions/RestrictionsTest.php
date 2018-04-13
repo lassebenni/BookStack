@@ -3,6 +3,7 @@
 use BookStack\Book;
 use BookStack\Services\PermissionService;
 use BookStack\User;
+use BookStack\Repos\EntityRepo;
 
 class RestrictionsTest extends BrowserKitTest
 {
@@ -108,21 +109,21 @@ class RestrictionsTest extends BrowserKitTest
 
         $this->setEntityRestrictions($book, ['view', 'delete', 'update']);
 
-        $this->forceVisit($bookUrl . '/chapter/create')
+        $this->forceVisit($bookUrl . '/create-chapter')
             ->see('You do not have permission')->seePageIs('/');
-        $this->forceVisit($bookUrl . '/page/create')
+        $this->forceVisit($bookUrl . '/create-page')
             ->see('You do not have permission')->seePageIs('/');
         $this->visit($bookUrl)->dontSeeInElement('.action-buttons', 'New Page')
             ->dontSeeInElement('.action-buttons', 'New Chapter');
 
         $this->setEntityRestrictions($book, ['view', 'create']);
 
-        $this->visit($bookUrl . '/chapter/create')
+        $this->visit($bookUrl . '/create-chapter')
             ->type('test chapter', 'name')
             ->type('test description for chapter', 'description')
             ->press('Save Chapter')
             ->seePageIs($bookUrl . '/chapter/test-chapter');
-        $this->visit($bookUrl . '/page/create')
+        $this->visit($bookUrl . '/create-page')
             ->type('test page', 'name')
             ->type('test content', 'html')
             ->press('Save Page')
@@ -453,21 +454,21 @@ class RestrictionsTest extends BrowserKitTest
 
         $this->setEntityRestrictions($book, ['view', 'delete', 'update']);
 
-        $this->forceVisit($bookUrl . '/chapter/create')
+        $this->forceVisit($bookUrl . '/create-chapter')
             ->see('You do not have permission')->seePageIs('/');
-        $this->forceVisit($bookUrl . '/page/create')
+        $this->forceVisit($bookUrl . '/create-page')
             ->see('You do not have permission')->seePageIs('/');
         $this->visit($bookUrl)->dontSeeInElement('.action-buttons', 'New Page')
             ->dontSeeInElement('.action-buttons', 'New Chapter');
 
         $this->setEntityRestrictions($book, ['view', 'create']);
 
-        $this->visit($bookUrl . '/chapter/create')
+        $this->visit($bookUrl . '/create-chapter')
             ->type('test chapter', 'name')
             ->type('test description for chapter', 'description')
             ->press('Save Chapter')
             ->seePageIs($bookUrl . '/chapter/test-chapter');
-        $this->visit($bookUrl . '/page/create')
+        $this->visit($bookUrl . '/create-page')
             ->type('test page', 'name')
             ->type('test content', 'html')
             ->press('Save Page')
@@ -554,4 +555,70 @@ class RestrictionsTest extends BrowserKitTest
         $this->dontSee(substr($bookChapter->name, 0, 15));
     }
 
+    public function test_book_sort_view_permission()
+    {
+        $firstBook = Book::first();
+        $secondBook = Book::find(2);
+        $thirdBook = Book::find(3);
+
+        $this->setEntityRestrictions($firstBook, ['view', 'update']);
+        $this->setEntityRestrictions($secondBook, ['view']);
+        $this->setEntityRestrictions($thirdBook, ['view', 'update']);
+
+        // Test sort page visibility
+        $this->actingAs($this->user)->visit($secondBook->getUrl() . '/sort')
+                ->see('You do not have permission')
+                ->seePageIs('/');
+
+        // Check sort page on first book
+        $this->actingAs($this->user)->visit($firstBook->getUrl() . '/sort')
+                ->see($thirdBook->name)
+                ->dontSee($secondBook->name);
+    }
+
+    public function test_book_sort_permission() {
+        $firstBook = Book::first();
+        $secondBook = Book::find(2);
+
+        $this->setEntityRestrictions($firstBook, ['view', 'update']);
+        $this->setEntityRestrictions($secondBook, ['view']);
+
+        $firstBookChapter = $this->app[EntityRepo::class]->createFromInput('chapter',
+                ['name' => 'first book chapter'], $firstBook);
+        $secondBookChapter = $this->app[EntityRepo::class]->createFromInput('chapter',
+                ['name' => 'second book chapter'], $secondBook);
+
+        // Create request data
+        $reqData = [
+            [
+                'id' => $firstBookChapter->id,
+                'sort' => 0,
+                'parentChapter' => false,
+                'type' => 'chapter',
+                'book' => $secondBook->id
+            ]
+        ];
+
+        // Move chapter from first book to a second book
+        $this->actingAs($this->user)->put($firstBook->getUrl() . '/sort', ['sort-tree' => json_encode($reqData)])
+                ->followRedirects()
+                ->see('You do not have permission')
+                ->seePageIs('/');
+
+        $reqData = [
+            [
+                'id' => $secondBookChapter->id,
+                'sort' => 0,
+                'parentChapter' => false,
+                'type' => 'chapter',
+                'book' => $firstBook->id
+            ]
+        ];
+
+        // Move chapter from second book to first book
+        $this->actingAs($this->user)->put($firstBook->getUrl() . '/sort', ['sort-tree' => json_encode($reqData)])
+                ->followRedirects()
+                ->see('You do not have permission')
+                ->seePageIs('/');
+    }
 }

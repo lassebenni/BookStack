@@ -2,6 +2,7 @@
 
 use Activity;
 use BookStack\Repos\EntityRepo;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Views;
 
@@ -56,7 +57,8 @@ class HomeController extends Controller
      * @return \Illuminate\Contracts\Routing\ResponseFactory|\Symfony\Component\HttpFoundation\Response
      * @throws \Exception
      */
-    public function getTranslations() {
+    public function getTranslations()
+    {
         $locale = app()->getLocale();
         $cacheKey = 'GLOBAL_TRANSLATIONS_' . $locale;
         if (cache()->has($cacheKey) && config('app.env') !== 'development') {
@@ -88,6 +90,27 @@ class HomeController extends Controller
     }
 
     /**
+     * Get an icon via image request.
+     * Can provide a 'color' parameter with hex value to color the icon.
+     * @param $iconName
+     * @param Request $request
+     * @return \Illuminate\Contracts\Routing\ResponseFactory|\Symfony\Component\HttpFoundation\Response
+     */
+    public function getIcon($iconName, Request $request)
+    {
+        $attrs = [];
+        if ($request->filled('color')) {
+            $attrs['fill'] = '#' . $request->get('color');
+        }
+
+        $icon = icon($iconName, $attrs);
+        return response($icon, 200, [
+            'Content-Type' => 'image/svg+xml',
+            'Cache-Control' => 'max-age=3600',
+        ]);
+    }
+
+    /**
      * Get custom head HTML, Used in ajax calls to show in editor.
      * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
@@ -95,5 +118,4 @@ class HomeController extends Controller
     {
         return view('partials/custom-head-content');
     }
-
 }

@@ -74,7 +74,9 @@ function userCan($permission, Ownable $ownable = null)
 function setting($key = null, $default = false)
 {
     $settingService = resolve(\BookStack\Services\SettingService::class);
-    if (is_null($key)) return $settingService;
+    if (is_null($key)) {
+        return $settingService;
+    }
     return $settingService->get($key, $default);
 }
 
@@ -87,7 +89,9 @@ function setting($key = null, $default = false)
 function baseUrl($path, $forceAppDomain = false)
 {
     $isFullUrl = strpos($path, 'http') === 0;
-    if ($isFullUrl && !$forceAppDomain) return $path;
+    if ($isFullUrl && !$forceAppDomain) {
+        return $path;
+    }
     $path = trim($path, '/');
 
     // Remove non-specified domain if forced and we have a domain
@@ -126,12 +130,50 @@ function redirect($to = null, $status = 302, $headers = [], $secure = null)
     return app('redirect')->to($to, $status, $headers, $secure);
 }
 
-function icon($name, $attrs = []) {
-    $iconPath = resource_path('assets/icons/' . $name . '.svg');
+/**
+ * Get a path to a theme resource.
+ * @param string $path
+ * @return string|boolean
+ */
+function theme_path($path = '')
+{
+    $theme = config('view.theme');
+    if (!$theme) {
+        return false;
+    }
+
+    return base_path('themes/' . $theme .($path ? DIRECTORY_SEPARATOR.$path : $path));
+}
+
+/**
+ * Get fetch an SVG icon as a string.
+ * Checks for icons defined within a custom theme before defaulting back
+ * to the 'resources/assets/icons' folder.
+ *
+ * Returns an empty string if icon file not found.
+ * @param $name
+ * @param array $attrs
+ * @return mixed
+ */
+function icon($name, $attrs = [])
+{
+    $attrs = array_merge([
+        'class' => 'svg-icon',
+        'data-icon' => $name
+    ], $attrs);
     $attrString = ' ';
     foreach ($attrs as $attrName => $attr) {
         $attrString .=  $attrName . '="' . $attr . '" ';
     }
+
+    $iconPath = resource_path('assets/icons/' . $name . '.svg');
+    $themeIconPath = theme_path('icons/' . $name . '.svg');
+    if ($themeIconPath && file_exists($themeIconPath)) {
+        $iconPath = $themeIconPath;
+    } else if (!file_exists($iconPath)) {
+        return '';
+    }
+
     $fileContents = file_get_contents($iconPath);
     return  str_replace('<svg', '<svg' . $attrString, $fileContents);
 }
@@ -159,11 +201,15 @@ function sortUrl($path, $data, $overrideData = [])
 
     foreach ($queryData as $name => $value) {
         $trimmedVal = trim($value);
-        if ($trimmedVal === '') continue;
+        if ($trimmedVal === '') {
+            continue;
+        }
         $queryStringSections[] = urlencode($name) . '=' . urlencode($trimmedVal);
     }
 
-    if (count($queryStringSections) === 0) return $path;
+    if (count($queryStringSections) === 0) {
+        return $path;
+    }
 
     return baseUrl($path . '?' . implode('&', $queryStringSections));
 }

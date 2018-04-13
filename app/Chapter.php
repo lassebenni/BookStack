@@ -1,8 +1,9 @@
 <?php namespace BookStack;
 
-
 class Chapter extends Entity
 {
+    public $searchFactor = 1.3;
+
     protected $fillable = ['name', 'description', 'priority', 'book_id'];
 
     protected $with = ['book'];
@@ -59,5 +60,4 @@ class Chapter extends Entity
     {
         return "'BookStack\\\\Chapter' as entity_type, id, id as entity_id, slug, name, {$this->textField} as text, '' as html, book_id, priority, '0' as chapter_id, '0' as draft, created_by, updated_by, updated_at, created_at";
     }
-
 }

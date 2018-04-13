@@ -1,12 +1,19 @@
 <?php namespace BookStack;
 
-
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Entity extends Ownable
 {
 
+    /**
+     * @var string - Name of property where the main text content is found
+     */
     public $textField = 'description';
+
+    /**
+     * @var float - Multiplier for search indexing.
+     */
+    public $searchFactor = 1.0;
 
     /**
      * Compares this entity to another given entity.
@@ -28,7 +35,9 @@ class Entity extends Ownable
     {
         $matches = [get_class($this), $this->id] === [get_class($entity), $entity->id];
 
-        if ($matches) return true;
+        if ($matches) {
+            return true;
+        }
 
         if (($entity->isA('chapter') || $entity->isA('page')) && $this->isA('book')) {
             return $entity->book_id === $this->id;
@@ -159,7 +168,9 @@ class Entity extends Ownable
      */
     public function getShortName($length = 25)
     {
-        if (strlen($this->name) <= $length) return $this->name;
+        if (strlen($this->name) <= $length) {
+            return $this->name;
+        }
         return substr($this->name, 0, $length - 3) . '...';
     }
 
@@ -176,13 +187,19 @@ class Entity extends Ownable
      * Return a generalised, common raw query that can be 'unioned' across entities.
      * @return string
      */
-    public function entityRawQuery(){return '';}
+    public function entityRawQuery()
+    {
+        return '';
+    }
 
     /**
      * Get the url of this entity
      * @param $path
      * @return string
      */
-    public function getUrl($path){return '/';}
+    public function getUrl($path)
+    {
+        return '/';
+    }
 
 }

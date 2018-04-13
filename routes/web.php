@@ -1,20 +1,24 @@
 <?php
 
 Route::get('/translations', 'HomeController@getTranslations');
+Route::get('/icon/{iconName}.svg', 'HomeController@getIcon');
 
 // Authenticated routes...
 Route::group(['middleware' => 'auth'], function () {
+
+    Route::get('/uploads/images/{path}', 'ImageController@showImage')
+        ->where('path', '.*$');
 
     Route::group(['prefix' => 'pages'], function() {
         Route::get('/recently-created', 'PageController@showRecentlyCreated');
         Route::get('/recently-updated', 'PageController@showRecentlyUpdated');
     });
 
+    Route::get('/create-book', 'BookController@create');
     Route::group(['prefix' => 'books'], function () {
 
         // Books
         Route::get('/', 'BookController@index');
-        Route::get('/create', 'BookController@create');
         Route::post('/', 'BookController@store');
         Route::get('/{slug}/edit', 'BookController@edit');
         Route::put('/{slug}', 'BookController@update');
@@ -31,8 +35,8 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('/{bookSlug}/export/plaintext', 'BookController@exportPlainText');
 
         // Pages
-        Route::get('/{bookSlug}/page/create', 'PageController@create');
-        Route::post('/{bookSlug}/page/create/guest', 'PageController@createAsGuest');
+        Route::get('/{bookSlug}/create-page', 'PageController@create');
+        Route::post('/{bookSlug}/create-guest-page', 'PageController@createAsGuest');
         Route::get('/{bookSlug}/draft/{pageId}', 'PageController@editDraft');
         Route::post('/{bookSlug}/draft/{pageId}', 'PageController@store');
         Route::get('/{bookSlug}/page/{pageSlug}', 'PageController@show');
@@ -58,9 +62,9 @@ Route::group(['middleware' => 'auth'], function () {
 
         // Chapters
         Route::get('/{bookSlug}/chapter/{chapterSlug}/create-page', 'PageController@create');
-        Route::post('/{bookSlug}/chapter/{chapterSlug}/page/create/guest', 'PageController@createAsGuest');
-        Route::get('/{bookSlug}/chapter/create', 'ChapterController@create');
-        Route::post('/{bookSlug}/chapter/create', 'ChapterController@store');
+        Route::post('/{bookSlug}/chapter/{chapterSlug}/create-guest-page', 'PageController@createAsGuest');
+        Route::get('/{bookSlug}/create-chapter', 'ChapterController@create');
+        Route::post('/{bookSlug}/create-chapter', 'ChapterController@store');
         Route::get('/{bookSlug}/chapter/{chapterSlug}', 'ChapterController@show');
         Route::put('/{bookSlug}/chapter/{chapterSlug}', 'ChapterController@update');
         Route::get('/{bookSlug}/chapter/{chapterSlug}/move', 'ChapterController@showMove');
@@ -86,13 +90,16 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('/user/all/{page}', 'ImageController@getAllForUserType');
         // Standard get, update and deletion for all types
         Route::get('/thumb/{id}/{width}/{height}/{crop}', 'ImageController@getThumbnail');
+        Route::get('/base64/{id}', 'ImageController@getBase64Image');
         Route::put('/update/{imageId}', 'ImageController@update');
+        Route::post('/drawing/upload', 'ImageController@uploadDrawing');
+        Route::put('/drawing/upload/{id}', 'ImageController@replaceDrawing');
         Route::post('/{type}/upload', 'ImageController@uploadByType');
         Route::get('/{type}/all', 'ImageController@getAllByType');
         Route::get('/{type}/all/{page}', 'ImageController@getAllByType');
         Route::get('/{type}/search/{page}', 'ImageController@searchByType');
         Route::get('/gallery/{filter}/{page}', 'ImageController@getGalleryFiltered');
-        Route::delete('/{imageId}', 'ImageController@destroy');
+        Route::delete('/{id}', 'ImageController@destroy');
     });
 
     // Attachments routes
@@ -146,6 +153,7 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('/users', 'UserController@index');
         Route::get('/users/create', 'UserController@create');
         Route::get('/users/{id}/delete', 'UserController@delete');
+        Route::patch('/users/{id}/switch-book-view', 'UserController@switchBookView');
         Route::post('/users/create', 'UserController@store');
         Route::get('/users/{id}', 'UserController@edit');
         Route::put('/users/{id}', 'UserController@update');

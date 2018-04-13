@@ -19,7 +19,7 @@ return [
     'app_settings' => 'App Settings',
     'app_name' => 'Application name',
     'app_name_desc' => 'This name is shown in the header and any emails.',
-    'app_name_header' => 'Show Application name in header?',
+    'app_name_header' => 'Show application name in header?',
     'app_public_viewing' => 'Allow public viewing?',
     'app_secure_images' => 'Enable higher security image uploads?',
     'app_secure_images_desc' => 'For performance reasons, all images are public. This option adds a random, hard-to-guess string in front of image urls. Ensure directory indexes are not enabled to prevent easy access.',
@@ -31,7 +31,7 @@ return [
     'app_logo_desc' => 'This image should be 43px in height. <br>Large images will be scaled down.',
     'app_primary_color' => 'Application primary color',
     'app_primary_color_desc' => 'This should be a hex value. <br>Leave empty to reset to the default color.',
-    'app_homepage' => 'Application Homepage',
+    'app_homepage' => 'Application homepage',
     'app_homepage_desc' => 'Select a page to show on the homepage instead of the default view. Page permissions are ignored for selected pages.',
     'app_homepage_default' => 'Default homepage view chosen',
     'app_disable_comments' => 'Disable comments',
@@ -96,7 +96,6 @@ return [
     'users_external_auth_id' => 'External Authentication ID',
     'users_password_warning' => 'Only fill the below if you would like to change your password:',
     'users_system_public' => 'This user represents any guest users that visit your instance. It cannot be used to log in but is assigned automatically.',
-    'users_books_view_type' => 'Preferred layout for books viewing',
     'users_delete' => 'Delete User',
     'users_delete_named' => 'Delete user :userName',
     'users_delete_warning' => 'This will fully delete this user with the name \':userName\' from the system.',
@@ -128,10 +127,12 @@ return [
         'nl' => 'Nederlands',
         'pt_BR' => 'Português do Brasil',
         'sk' => 'Slovensky',
+        'sv' => 'Svenska',
         'ja' => '日本語',
         'pl' => 'Polski',
         'it' => 'Italian',
-        'ru' => 'Русский'
+        'ru' => 'Русский',
+        'zh_CN' => '简体中文'
     ]
     ///////////////////////////////////
 ];

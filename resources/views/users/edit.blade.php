@@ -9,7 +9,7 @@
     <div class="container small">
         <p>&nbsp;</p>
         <div class="card">
-            <h3><i class="zmdi-edit zmdi"></i> {{ $user->id === $currentUser->id ? trans('settings.users_edit_profile') : trans('settings.users_edit') }}</h3>
+            <h3>@icon('edit') {{ $user->id === $currentUser->id ? trans('settings.users_edit_profile') : trans('settings.users_edit') }}</h3>
             <div class="body">
                 <form action="{{ baseUrl("/settings/users/{$user->id}") }}" method="post">
                     <div class="row">
@@ -43,13 +43,6 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="form-group">
-                                <label for="books-view-type">{{ trans('settings.users_books_view_type') }}</label>
-                                <select name="setting[books_view_type]" id="books-view-type">
-                                    <option @if(setting()->getUser($user, 'books_view_type', 'list') === 'list') selected @endif value="list">List</option>
-                                    <option @if(setting()->getUser($user, 'books_view_type', 'list') === 'grid') selected @endif value="grid">Grid</option>
-                                </select>
-                            </div>
                         </div>
                     </div>
                     <div class="form-group text-right">
@@ -65,14 +58,14 @@
 
         @if($currentUser->id === $user->id && count($activeSocialDrivers) > 0)
             <div class="card">
-                <h3><i class="zmdi zmdi-sign-in"></i> {{ trans('settings.users_social_accounts') }}</h3>
+                <h3>@icon('login')  {{ trans('settings.users_social_accounts') }}</h3>
                 <div class="body">
                     <p class="text-muted">{{ trans('settings.users_social_accounts_info') }}</p>
                     <div class="container">
                         <div class="row">
                             @foreach($activeSocialDrivers as $driver => $enabled)
                                 <div class="col-sm-4 col-xs-6 text-center">
-                                    <div>@icon($driver, ['width' => 56])</div>
+                                    <div>@icon('auth/'. $driver, ['style' => 'width: 56px;height: 56px;'])</div>
                                     <div>
                                         @if($user->hasSocialAccount($driver))
                                             <a href="{{ baseUrl("/login/service/{$driver}/detach") }}" class="button neg">{{ trans('settings.users_social_disconnect') }}</a>
